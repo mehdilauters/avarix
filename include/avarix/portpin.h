@@ -32,6 +32,8 @@ typedef struct {
 /// Unset \ref portpin_t value (port set to 0)
 #define PORTPIN_NONE  ((portpin_t){ 0, 0 })
 
+/// Get a pointer to the \e PINnCTRL register
+#define PORTPIN_CTRL(pp)  ((&(pp)->port->PIN0CTRL)[(pp)->pin])
 
 /** @name Access pin bit of port registers */
 //@{
@@ -51,15 +53,12 @@ static inline void portpin_outtgl(const portpin_t *pp) { pp->port->OUTTGL = (1 <
 /// Get port pin value as a boolean
 static inline bool portpin_in(const portpin_t *pp) { return pp->port->IN & (1 << pp->pin); }
 /// Set input pull-up
-static inline void portpin_inpullup(const portpin_t *pp) { pp->port->PIN0CTRL |= 0b011; }
+static inline void portpin_inpullup(const portpin_t *pp) { PORTPIN_CTRL(pp) |= PORT_OPC_PULLUP_gc; }
 /// Set input pull-up
-static inline void portpin_inpulldown(const portpin_t *pp) { pp->port->PIN0CTRL |= 0b010; }
+static inline void portpin_inpulldown(const portpin_t *pp) { PORTPIN_CTRL(pp) |= PORT_OPC_PULLDOWN_gc; }
 
 //@}
 
-
-/// Get a pointer to the \e PINnCTRL register
-#define PORTPIN_CTRL(pp)  ((&(pp)->port->PIN0CTRL)[(pp)->pin])
 
 /// Event Channel multiplexer input selection for the port pin
 #define PORTPIN_EVSYS_CHMUX(pp)  (EVSYS_CHMUX_PORTA_PIN0_gc + (((char*)(pp)->port-(char*)&PORTA)/((char*)&PORTB-(char*)&PORTA)) * 8 + (pp)->pin)

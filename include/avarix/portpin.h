@@ -50,6 +50,10 @@ static inline void portpin_outclr(const portpin_t *pp) { pp->port->OUTCLR = (1 <
 static inline void portpin_outtgl(const portpin_t *pp) { pp->port->OUTTGL = (1 << pp->pin); }
 /// Get port pin value as a boolean
 static inline bool portpin_in(const portpin_t *pp) { return pp->port->IN & (1 << pp->pin); }
+/// Set input pull-up
+static inline void portpin_inpullup(const portpin_t *pp) { pp->port->PIN0CTRL |= 0b011; }
+/// Set input pull-up
+static inline void portpin_inpulldown(const portpin_t *pp) { pp->port->PIN0CTRL |= 0b010; }
 
 //@}
 

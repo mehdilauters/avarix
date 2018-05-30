@@ -179,7 +179,7 @@ int read_transceived(mfrc522_t *m, uint8_t *buffer, int buffer_len) {
   return i;
 }
 
-void mfrc522_init(mfrc522_t *m, portpin_t *rpp) {
+void mfrc522_init(mfrc522_t *m, const portpin_t *rpp) {
   // configure SPI
   spi_init();
 

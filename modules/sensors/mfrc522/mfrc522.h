@@ -23,7 +23,7 @@ typedef enum {
 typedef struct {
 
   mfrc522_state_t state;
-  portpin_t *reset;
+  const portpin_t *reset;
 
   int polling_counter;
 
@@ -35,7 +35,7 @@ typedef struct {
 /** @brief Initialize MFRC SPI and MFRC chip
  * @brief reset pin connected to chip RST
  */
-void mfrc522_init(mfrc522_t *, portpin_t *reset);
+void mfrc522_init(mfrc522_t *, const portpin_t *reset);
 
 /** @brief Update communication with MFRC522, need to be called often
  * @return true when mfrc522 was just reseted

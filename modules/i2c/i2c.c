@@ -5,6 +5,8 @@
 #include "i2c.h"
 #include "i2c_config.h"
 
+#include <string.h>
+
 // Apply default configuration values
 // Include template for each enabled I2C
 // Define i2cX_init()
@@ -17,9 +19,6 @@
 # define X_(p,s)  p ## C ## s
 # ifndef I2CC_BAUDRATE
 #  define I2CC_BAUDRATE  I2C_BAUDRATE
-# endif
-# ifndef I2CC_INTLVL
-#  define I2CC_INTLVL  I2C_INTLVL
 # endif
 # ifdef I2CC_MASTER
 #  include "masterx.inc.c"
@@ -35,9 +34,6 @@
 # ifndef I2CD_BAUDRATE
 #  define I2CD_BAUDRATE  I2C_BAUDRATE
 # endif
-# ifndef I2CD_INTLVL
-#  define I2CD_INTLVL  I2C_INTLVL
-# endif
 # ifdef I2CD_MASTER
 #  include "masterx.inc.c"
 # else
@@ -52,9 +48,6 @@
 # ifndef I2CE_BAUDRATE
 #  define I2CE_BAUDRATE  I2C_BAUDRATE
 # endif
-# ifndef I2CE_INTLVL
-#  define I2CE_INTLVL  I2C_INTLVL
-# endif
 # ifdef I2CE_MASTER
 #  include "masterx.inc.c"
 # else
@@ -68,9 +61,6 @@
 # define X_(p,s)  p ## F ## s
 # ifndef I2CF_BAUDRATE
 #  define I2CF_BAUDRATE  I2C_BAUDRATE
-# endif
-# ifndef I2CF_INTLVL
-#  define I2CF_INTLVL  I2C_INTLVL
 # endif
 # ifdef I2CF_MASTER
 #  include "masterx.inc.c"
@@ -93,8 +83,10 @@ void i2c_init(void)
 
 
 
-int8_t i2cm_send(i2cm_t *m, uint8_t addr, const uint8_t *data, uint8_t n)
+int8_t i2cm_send(i2cm_t *i2cm, uint8_t addr, const uint8_t *data, uint8_t n)
 {
+  TWI_MASTER_t *m = i2cm->master;
+
   uint8_t status;
 
   // slave address + Write bit (0)
@@ -124,8 +116,10 @@ int8_t i2cm_send(i2cm_t *m, uint8_t addr, const uint8_t *data, uint8_t n)
 }
 
 
-int8_t i2cm_recv(i2cm_t *m, uint8_t addr, uint8_t *data, uint8_t n)
+int8_t i2cm_recv(i2cm_t *i2cm, uint8_t addr, uint8_t *data, uint8_t n)
 {
+  TWI_MASTER_t *m = i2cm->master;
+
   uint8_t status;
 
   // slave address + Read bit (1)
@@ -150,5 +144,68 @@ int8_t i2cm_recv(i2cm_t *m, uint8_t addr, uint8_t *data, uint8_t n)
 
   return i;
 }
+
+int8_t i2cm_async_send(i2cm_t *i2cm, uint8_t addr, const uint8_t *data, uint8_t n,
+                        i2cm_write_completed_callback f, void* payload)
+{
+  TWI_MASTER_t *m = i2cm->master;
+
+  // check if send size overflow internal buffer
+  if(n > sizeof(i2cm->send_buffer)) {
+    return -1;
+  }
+
+  INTLVL_DISABLE_BLOCK(I2C_INTLVL) {
+
+    // check if an async read or write is currently under way
+    if(i2cm->bytes_to_send != 0) {
+      return -2;
+    }
+
+    // check bus is idle, return otherwise
+    if((m->STATUS & TWI_MASTER_BUSSTATE_gm) != TWI_MASTER_BUSSTATE_IDLE_gc) {
+      return -3;
+    }
+
+    // prepare send buffer
+    memcpy(i2cm->send_buffer, data, n);
+    i2cm->bytes_sent = 0;
+    i2cm->bytes_to_send = n;
+
+    // register callback
+    i2cm->write_completed_callback = f;
+    i2cm->write_completed_callback_payload = payload;
+
+    // enable write interruption
+    m->CTRLA |= TWI_MASTER_WIEN_bm;
+    // push slave address + write bit (0);
+    m->ADDR = (addr << 1) + 0;
+
+  }
+  return n;
+}
+
+void i2cs_register_reset_callback(i2cs_t *i2c, i2cs_reset_callback_t f)
+{
+  INTLVL_DISABLE_BLOCK(I2C_INTLVL) {
+    i2c->reset_callback = f;
+  }
+}
+
+void i2cs_register_recv_callback(i2cs_t *i2c, i2cs_recv_callback_t f)
+{
+  INTLVL_DISABLE_BLOCK(I2C_INTLVL) {
+    i2c->recv_callback = f;
+  }
+}
+
+void i2cs_register_prepare_send_callback(i2cs_t *i2c, i2cs_prepare_send_callback_t f)
+{
+  INTLVL_DISABLE_BLOCK(I2C_INTLVL) {
+    i2c->prepare_send_callback = f;
+  }
+}
+
+
 
 ///@endcond

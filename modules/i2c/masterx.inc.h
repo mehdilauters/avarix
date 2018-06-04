@@ -4,12 +4,12 @@
 //@{
 /**
  * @file
- * @brief I2C slave definitions
+ * @brief I2C master definitions
  */
 #define i2cX(s) X_(i2c,s)
 
-// I2cX slave singleton
-extern i2cs_t i2cX();
+// I2cX master singleton
+extern i2cm_t i2cX();
 
 #undef i2cX
 #undef X_

@@ -32,29 +32,8 @@ void i2cX(_init)(void)
     | TWI_SLAVE_APIEN_bm
     | TWI_SLAVE_DIEN_bm
     | TWI_SLAVE_PIEN_bm
-    | ((I2CX(_INTLVL) << TWI_SLAVE_INTLVL_gp) & TWI_SLAVE_INTLVL_gm);
+    | (((I2C_INTLVL) << TWI_SLAVE_INTLVL_gp) & TWI_SLAVE_INTLVL_gm);
   TWIX.SLAVE.ADDR = I2CX(_ADDRESS) << 1;
-}
-
-void i2cX(s_register_reset_callback)(i2cs_reset_callback_t f)
-{
-  INTLVL_DISABLE_BLOCK(I2CX(_INTLVL)) {
-    i2cX().reset_callback = f;
-  }
-}
-
-void i2cX(s_register_recv_callback)(i2cs_recv_callback_t f)
-{
-  INTLVL_DISABLE_BLOCK(I2CX(_INTLVL)) {
-    i2cX().recv_callback = f;
-  }
-}
-
-void i2cX(s_register_prepare_send_callback)(i2cs_prepare_send_callback_t f)
-{
-  INTLVL_DISABLE_BLOCK(I2CX(_INTLVL)) {
-    i2cX().prepare_send_callback = f;
-  }
 }
 
 // Interrupt handler

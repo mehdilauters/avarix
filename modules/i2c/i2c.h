@@ -24,67 +24,9 @@ typedef struct i2cs_struct i2cs_t;
 
 #else
 
-typedef struct TWI_MASTER_struct i2cm_t;
+#include "i2cm.inc.h"
 
-typedef enum {
-  I2CS_STATE_NONE,
-  I2CS_STATE_READ,
-  I2CS_STATE_WRITE,
-
-} i2cs_state_t;
-
-#ifndef I2CS_RECV_BUFFER_SIZE
-# define I2CS_RECV_BUFFER_SIZE  32
-#endif
-
-#ifndef I2CS_SEND_BUFFER_SIZE
-# define I2CS_SEND_BUFFER_SIZE  32
-#endif
-
-/** @brief I2C slave master-write frame received
- *
- * @param buffer buffer containing the received bytes
- * @param n number of bytes received from master
- *
- * This function is called when a master-write operation has completed
- */
-typedef void (*i2cs_recv_callback_t)(uint8_t *buffer, uint8_t n);
-
-/** @brief I2C slave master-read operation was requested
- *
- * @param buffer buffer to provision
- * @param maxsz maximum number of bytes which can be written to buffer
- * @return number of bytes to send, returning 0 will result in a NACK from slave.
- *
- * This function is called when a master-read operation was requested by master
- * and ask user to provision the buffer which will be sent.
- */
-typedef uint8_t (*i2cs_prepare_send_callback_t)(uint8_t *buffer, uint8_t maxsz);
-
-/** @brief I2C slave transaction finished successfully or not
- *
- * This function is called when a STOP condition or any bus error has ended current transaction
- */
-typedef void (*i2cs_reset_callback_t)(void);
-
-typedef struct {
-
-  i2cs_state_t state;
-
-  uint8_t recvd_bytes;
-  uint8_t recv_buffer[I2CS_RECV_BUFFER_SIZE];
-
-  uint8_t sent_bytes;
-  uint8_t bytes_to_send;
-  uint8_t send_buffer[I2CS_SEND_BUFFER_SIZE];
-
-  i2cs_recv_callback_t recv_callback;
-
-  i2cs_prepare_send_callback_t prepare_send_callback;
-
-  i2cs_reset_callback_t reset_callback;
-
-} i2cs_t;
+#include "i2cs.inc.h"
 
 // Check for I2C enabled as both master and slave
 // Define pointers to internal structures
@@ -96,7 +38,8 @@ typedef struct {
 #if (defined I2CC_MASTER) && (defined I2CC_SLAVE)
 # error I2CC enabled as both master and slave
 #elif (defined I2CC_MASTER)
-# define i2cC  (&TWIC.MASTER)
+# define X_(p,s)  p ## C ## s
+# include "masterx.inc.h"
 #elif (defined I2CC_SLAVE)
 # define X_(p,s)  p ## C ## s
 # include "slavex.inc.h"
@@ -105,7 +48,8 @@ typedef struct {
 #if (defined I2CD_MASTER) && (defined I2CD_SLAVE)
 # error I2CD enabled as both master and slave
 #elif (defined I2CD_MASTER)
-# define i2cD  (&TWID.MASTER)
+# define X_(p,s)  p ## D ## s
+# include "masterx.inc.h"
 #elif (defined I2CD_SLAVE)
 # define X_(p,s)  p ## D ## s
 # include "slavex.inc.h"
@@ -114,7 +58,8 @@ typedef struct {
 #if (defined I2CE_MASTER) && (defined I2CE_SLAVE)
 # error I2CE enabled as both master and slave
 #elif (defined I2CE_MASTER)
-# define i2cE  (&TWIE.MASTER)
+# define X_(p,s)  p ## E ## s
+# include "masterx.inc.h"
 #elif (defined I2CE_SLAVE)
 # define X_(p,s)  p ## E ## s
 # include "slavex.inc.h"
@@ -123,7 +68,8 @@ typedef struct {
 #if (defined I2CF_MASTER) && (defined I2CF_SLAVE)
 # error I2CF enabled as both master and slave
 #elif (defined I2CF_MASTER)
-# define i2cF  (&TWIF.MASTER)
+# define X_(p,s)  p ## E ## s
+# include "masterx.inc.h"
 #elif (defined I2CF_SLAVE)
 # define X_(p,s)  p ## F ## s
 # include "slavex.inc.h"
@@ -163,6 +109,32 @@ int8_t i2cm_send(i2cm_t *m, uint8_t addr, const uint8_t *data, uint8_t n);
  */
 int8_t i2cm_recv(i2cm_t *m, uint8_t addr, uint8_t *data, uint8_t n);
 
+/** @brief Asynchonously send a frame to a slave, 
+ * write completion will be notify using the write_completed callback function
+ *
+ * @param addr slave address
+ * @param n size to send
+ * @param data buffer to send
+ * @param f function which will be called on write completion (success or failure)
+ * @param payload pointer which will be passed as argument to callback function
+ *
+ * @retval -1 send size overflow internal buffer
+ * @retval -2 another async send/recv is underway
+ * @retval -2 i2c bus was not ready
+ * @retval n  size of data which will be sent
+ */
+int8_t i2cm_async_send(i2cm_t *i2c, uint8_t addr, const uint8_t *data, uint8_t n,
+                        i2cm_write_completed_callback f, void *payload);
+
+/** @brief Register f to be called whenever a master-read operation was requested and user need
+ * to provision the send buffer */
+void i2cs_register_prepare_send_callback(i2cs_t *, i2cs_prepare_send_callback_t f);
+
+/** @brief Register f to be called whenever a master-write operation as finished */
+void i2cs_register_recv_callback(i2cs_t *, i2cs_recv_callback_t f);
+
+/** @brief Register f to be called whenever the i2c transaction was terminated (on STOP or ERROR) */
+void i2cs_register_reset_callback(i2cs_t *, i2cs_reset_callback_t f);
 
 #endif
 //@}

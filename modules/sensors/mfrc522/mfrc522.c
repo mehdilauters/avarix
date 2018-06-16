@@ -287,8 +287,10 @@ bool mfrc522_update(mfrc522_t *m) {
           stop_transceive(m);
           m->serial_validity = false;
           m->state = MFRC522_STATE_POWEROFF;
+          break;
         }
       }
+      break;
     }
 
     case MFRC522_STATE_POWEROFF:

@@ -30,6 +30,9 @@ void ssd_sr_init(ssd_sr_t *s, uint8_t n, portpin_t input, portpin_t clock, portp
 /** @brief Clear display */
 void ssd_sr_clear_display(ssd_sr_t *s);
 
+/** @brief Clear display at position offset, for length digits */
+int ssd_sr_clear(ssd_sr_t *s, uint8_t offset, uint8_t length);
+
 /** @brief Display integer value on SSDs starting at a position offset, limiting number of used SSDs to length*/
 int ssd_sr_display_integer(ssd_sr_t *s, uint8_t offset, uint8_t length, int value);
 

@@ -70,6 +70,26 @@ static inline void show_display(ssd_sr_t *s) {
   latch_display(s);
 }
 
+int blit_clear(ssd_sr_t *s, uint8_t offset, uint8_t length) {
+  // limit offset and length according to internal buffer size
+  const unsigned max_sz = LENGTHOF(s->display);
+  if(offset > max_sz) {
+    return -1;
+  }
+
+  if(offset + length > max_sz) {
+    return -2;
+  };
+
+  // erase all digits before writing
+  uint8_t i = 0;
+  for(;i<length; i++) {
+    s->display[offset+i] = SSD_SR_BITMAP_CLEAR;
+  }
+
+  return offset+i;
+}
+
 int blit_integer(ssd_sr_t *s, uint8_t offset, uint8_t length, int value, bool display_zeroes) {
   
   // limit offset and length according to internal buffer size
@@ -92,6 +112,12 @@ int blit_integer(ssd_sr_t *s, uint8_t offset, uint8_t length, int value, bool di
   uint8_t b = display_zeroes ? ssd_sr_bitmap[0] : SSD_SR_BITMAP_CLEAR;
   for(uint8_t i=0; i<length; i++) {
     s->display[offset+i] = b;
+  }
+
+  // special case if value equals zero
+  if(value == 0) {
+    s->display[offset] = ssd_sr_bitmap[0];
+    return offset + 1;
   }
 
   bool overflow = false;
@@ -160,6 +186,17 @@ void ssd_sr_init(ssd_sr_t *s, uint8_t n, portpin_t input, portpin_t clock, portp
 void ssd_sr_clear_display(ssd_sr_t *s) {
   memset(s->display, SSD_SR_BITMAP_CLEAR, s->n);
   show_display(s);
+}
+
+int ssd_sr_clear(ssd_sr_t *s, uint8_t offset, uint8_t length) {
+
+  int rv = blit_clear(s, offset, length);
+  if(rv < 0) {
+    return rv;
+  }
+
+  show_display(s);
+  return 0;
 }
 
 int ssd_sr_display_integer(ssd_sr_t *s, uint8_t offset, uint8_t length, int value) {

@@ -41,6 +41,13 @@ void i2cX(_init)(void)
   TWIX.MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
 }
 
+void i2cX(_deinit)(void)
+{
+  TWIX.MASTER.BAUD = 0;
+  TWIX.MASTER.CTRLA = 0;
+  TWIX.MASTER.STATUS = 0;
+}
+
 // TWI MASTER interruption handler
 ISR(twiX(_TWIM_vect)) 
 {

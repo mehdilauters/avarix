@@ -36,6 +36,12 @@ void i2cX(_init)(void)
   TWIX.SLAVE.ADDR = I2CX(_ADDRESS) << 1;
 }
 
+void i2cX(_deinit)(void)
+{
+  TWIX.SLAVE.CTRLA = 0;
+  TWIX.SLAVE.ADDR = 0;
+}
+
 // Interrupt handler
 ISR(twiX(_TWIS_vect))
 {

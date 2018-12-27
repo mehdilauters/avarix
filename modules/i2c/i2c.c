@@ -27,6 +27,7 @@
 # endif
 #else
 # define i2cC_init()
+# define i2cC_deinit()
 #endif
 
 #if (defined I2CD_MASTER) || (defined I2CD_SLAVE)
@@ -41,6 +42,7 @@
 # endif
 #else
 # define i2cD_init()
+# define i2cD_deinit()
 #endif
 
 #if (defined I2CE_MASTER) || (defined I2CE_SLAVE)
@@ -55,6 +57,7 @@
 # endif
 #else
 # define i2cE_init()
+# define i2cE_deinit()
 #endif
 
 #if (defined I2CF_MASTER) || (defined I2CF_SLAVE)
@@ -69,6 +72,7 @@
 # endif
 #else
 # define i2cF_init()
+# define i2cF_deinit()
 #endif
 
 
@@ -81,7 +85,13 @@ void i2c_init(void)
   i2cF_init();
 }
 
-
+void i2c_deinit(void)
+{
+  i2cC_deinit();
+  i2cD_deinit();
+  i2cE_deinit();
+  i2cF_deinit();
+}
 
 int8_t i2cm_send(i2cm_t *i2cm, uint8_t addr, const uint8_t *data, uint8_t n)
 {

@@ -83,6 +83,9 @@ typedef struct i2cs_struct i2cs_t;
 void i2c_init(void);
 
 
+/** @brief Deinitialize all I2Cs */
+void i2c_deinit(void);
+
 /** @brief Send a frame to a slave
  *
  * @param  m  I2C master to use

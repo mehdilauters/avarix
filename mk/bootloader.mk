@@ -5,7 +5,7 @@
 
 BOOTLOADER_TARGET = bootloader
 # module dependencies must be flatten here
-BOOTLOADER_MODULES = clock
+BOOTLOADER_MODULES = clock i2c
 
 
 ## Internal variables

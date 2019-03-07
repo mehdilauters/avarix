@@ -65,7 +65,7 @@ typedef enum {
 #define boot_nvm_busy_wait() do{}while(NVM_STATUS & NVM_NVMBUSY_bm)
 
 /// 
-bool bootloader_active;
+uint8_t bootloader_keep_alive;
 bool reboot_asap;
 
 /// Load a word into page buffer
@@ -259,9 +259,6 @@ static void i2c_recv_callback(uint8_t *rx, uint8_t rxlen) {
   if(rxlen == 0)
     return;
 
-  // keep bootloader awake
-  bootloader_active = true;
-
   // compute frame checksum
   uint16_t csum = fletcher16_checksum(rx,rxlen-2);
   // first byte is register ID
@@ -277,6 +274,9 @@ static void i2c_recv_callback(uint8_t *rx, uint8_t rxlen) {
       if(csum != checksum) {
         i2c_tx_answer_failure(FAILURE_INVALID_CHECKSUM);
       }
+
+      // keep bootloader awake
+      bootloader_keep_alive = 30;
 
       // reply with informations
       uint16_t pagesize = APP_SECTION_PAGE_SIZE;
@@ -298,6 +298,9 @@ static void i2c_recv_callback(uint8_t *rx, uint8_t rxlen) {
         i2c_tx_answer_failure(FAILURE_INVALID_CHECKSUM);
       }
 
+      // keep bootloader awake
+      bootloader_keep_alive = 30;
+
       // reboot asap
       reboot_asap = true;
 
@@ -315,6 +318,9 @@ static void i2c_recv_callback(uint8_t *rx, uint8_t rxlen) {
       if(csum != checksum) {
         i2c_tx_answer_failure(FAILURE_INVALID_CHECKSUM);
       }
+
+      // keep bootloader awake
+      bootloader_keep_alive = 30;
 
       boot_app_page_erase_write(address);
 
@@ -341,6 +347,9 @@ static void i2c_recv_callback(uint8_t *rx, uint8_t rxlen) {
         i2c_tx_answer_failure(FAILURE_INVALID_FRAME_SIZE);
         break;
       }
+
+      // keep bootloader awake
+      bootloader_keep_alive = 30;
 
       // unpack frame
       uint32_t address = unpack_u32(&rx);
@@ -380,7 +389,7 @@ static void i2c_recv_callback(uint8_t *rx, uint8_t rxlen) {
 int main(void) __attribute__ ((OS_main));
 int main(void)
 {
-  bootloader_active = false;
+  bootloader_keep_alive = 20;
   reboot_asap = false;
 
   // switch vector table
@@ -401,26 +410,25 @@ int main(void)
   (void)boot_user_sig_write;
   (void)boot;
 
-  uint8_t t=0;
   for(;;) {
 
     // continue boot in 1s
-    if(t > 20) {
-      // except if any traffic on i2c has happened
-      if(!bootloader_active) {
-        break;
-      }
+    if(bootloader_keep_alive == 0) {
+      break;
     }
     else {
-      t++;
+      bootloader_keep_alive--;
     }
 
     if(reboot_asap) {
+      PORTPIN_CTRL(LEDA) = 0;
+      PORTPIN_CTRL(LEDB) = 0;
+
       wdt_enable(WDTO_60MS);
       for(;;);
     }
     
-    if(t%2) {
+    if(bootloader_keep_alive%2) {
       PORTPIN_CTRL(LEDA) = PORT_OPC_PULLUP_gc;
       PORTPIN_CTRL(LEDB) = PORT_OPC_PULLDOWN_gc;
     }
@@ -428,6 +436,7 @@ int main(void)
       PORTPIN_CTRL(LEDA) = PORT_OPC_PULLDOWN_gc;
       PORTPIN_CTRL(LEDB) = PORT_OPC_PULLUP_gc;
     }
+
     _delay_ms(50);
   }
 

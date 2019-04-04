@@ -146,9 +146,7 @@ int uart_recv_nowait(uart_t *u)
 int uart_send(uart_t *u, uint8_t v)
 {
   while(uart_send_nowait(u, v) < 0) {
-    if( !(CPU_SREG & CPU_I_bm)
-        || !(PMIC.CTRL & INTLVL_BM(UART_INTLVL)) 
-        || (PMIC.STATUS & INTLVL_BM(UART_INTLVL)) ) {
+    if( !(CPU_SREG & CPU_I_bm) || !(PMIC.CTRL & INTLVL_BM(UART_INTLVL)) ) {
       // UART interrupt disabled, avoid deadlock
       while( !(u->usart->STATUS & USART_DREIF_bm) ) ;
       // pop one byte from the buffer, should be the last iteration
@@ -225,6 +223,9 @@ int uart_dev_send(char c, FILE *fp)
 # ifndef UARTC0_BSCALE
 #  define UARTC0_BSCALE  UART_BSCALE
 # endif
+# ifndef UARTC0_STOP_BITS
+#  define UARTC0_STOP_BITS  UART_STOP_BITS
+# endif
 # include "uartxn.inc.c"
 #endif
 
@@ -241,6 +242,9 @@ int uart_dev_send(char c, FILE *fp)
 # endif
 # ifndef UARTC1_BSCALE
 #  define UARTC1_BSCALE  UART_BSCALE
+# endif
+# ifndef UARTC1_STOP_BITS
+#  define UARTC1_STOP_BITS  UART_STOP_BITS
 # endif
 # include "uartxn.inc.c"
 #endif
@@ -259,6 +263,9 @@ int uart_dev_send(char c, FILE *fp)
 # ifndef UARTD0_BSCALE
 #  define UARTD0_BSCALE  UART_BSCALE
 # endif
+# ifndef UARTD0_STOP_BITS
+#  define UARTD0_STOP_BITS  UART_STOP_BITS
+# endif
 # include "uartxn.inc.c"
 #endif
 
@@ -275,6 +282,9 @@ int uart_dev_send(char c, FILE *fp)
 # endif
 # ifndef UARTD1_BSCALE
 #  define UARTD1_BSCALE  UART_BSCALE
+# endif
+# ifndef UARTD1_STOP_BITS
+#  define UARTD1_STOP_BITS  UART_STOP_BITS
 # endif
 # include "uartxn.inc.c"
 #endif
@@ -293,6 +303,9 @@ int uart_dev_send(char c, FILE *fp)
 # ifndef UARTE0_BSCALE
 #  define UARTE0_BSCALE  UART_BSCALE
 # endif
+# ifndef UARTE0_STOP_BITS
+#  define UARTE0_STOP_BITS  UART_STOP_BITS
+# endif
 # include "uartxn.inc.c"
 #endif
 
@@ -309,6 +322,9 @@ int uart_dev_send(char c, FILE *fp)
 # endif
 # ifndef UARTE1_BSCALE
 #  define UARTE1_BSCALE  UART_BSCALE
+# endif
+# ifndef UARTE1_STOP_BITS
+#  define UARTE1_STOP_BITS  UART_STOP_BITS
 # endif
 # include "uartxn.inc.c"
 #endif
@@ -327,6 +343,9 @@ int uart_dev_send(char c, FILE *fp)
 # ifndef UARTF0_BSCALE
 #  define UARTF0_BSCALE  UART_BSCALE
 # endif
+# ifndef UARTF0_STOP_BITS
+#  define UARTF0_STOP_BITS  UART_STOP_BITS
+# endif
 # include "uartxn.inc.c"
 #endif
 
@@ -343,6 +362,9 @@ int uart_dev_send(char c, FILE *fp)
 # endif
 # ifndef UARTF1_BSCALE
 #  define UARTF1_BSCALE  UART_BSCALE
+# endif
+# ifndef UARTF1_STOP_BITS
+#  define UARTF1_STOP_BITS  UART_STOP_BITS
 # endif
 # include "uartxn.inc.c"
 #endif

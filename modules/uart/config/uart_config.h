@@ -21,6 +21,8 @@
 #define UART_BAUDRATE  38400
 /// Scale factor used to compute baudrate (from -6 to 7)
 #define UART_BSCALE  0
+/// Stop bits (from 1-bit to 2-bits)
+#define UART_STOP_BITS 1
 
 /// Enable UARTxn
 #define UARTxn_ENABLED

@@ -47,6 +47,15 @@ _Static_assert(UART_ACTUAL_BAUDRATE/UARTXN(_BAUDRATE) < 1.01 &&
                "Baudrate error is higher than 1%, try with another UARTxn_BSCALE value");
 #undef UART_ACTUAL_BAUDRATE
 
+// allowed stop bits configurations are 1 bit or 2 bits
+#if UARTXN(_STOP_BITS) == 1
+#define UARTXN_SBMODE (0x00<<USART_SBMODE_bp)
+#elif UARTXN(_STOP_BITS) == 2
+#define UARTXN_SBMODE (0x01<<USART_SBMODE_bp)
+#else
+# error Invalid UARTxn_STOP_BITS value, must be 1 or 2
+#endif
+
 
 /// FIFO buffer for received data
 static uint8_t uartXN(_rxbuf)[UARTXN(_RX_BUF_SIZE)] AVARIX_DATA_NOINIT;
@@ -73,7 +82,8 @@ void uartXN(_init)(void)
   uartXN_.usart->CTRLA = (UART_INTLVL << USART_RXCINTLVL_gp);
   // async mode, no parity, 1 stop bit, 8 data bits
   uartXN_.usart->CTRLC = USART_CMODE_ASYNCHRONOUS_gc
-      | USART_PMODE_DISABLED_gc | USART_CHSIZE_8BIT_gc;
+      | USART_PMODE_DISABLED_gc | USART_CHSIZE_8BIT_gc
+      | UARTXN_SBMODE;
 
   // baudrate, updated when BAUDCTRLA is written so set it after BAUDCTRLB
   uartXN_.usart->BAUDCTRLB = ((UARTXN_BSEL >> 8) & 0x0F) | ((UARTXN(_BSCALE) << USART_BSCALE_gp) & USART_BSCALE_gm);
@@ -105,3 +115,4 @@ ISR(USARTXN(_DRE_vect))
 #undef uartXN_
 #undef XN_
 #undef UARTXN_BSEL
+#undef UARTXN_SBMODE

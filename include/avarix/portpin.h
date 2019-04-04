@@ -70,8 +70,16 @@ static inline void portpin_enable_int(const portpin_t *pp, uint8_t n, intlvl_t l
 inline void portpin_enable_int(const portpin_t *pp, uint8_t n, intlvl_t lvl)
 {
   pp->port->INTFLAGS &= ~(1 << n);
-  (&pp->port->INT0MASK)[n] |= (1 << pp->pin);
-  pp->port->INTCTRL &= ~(PORT_INT0LVL_gm << 2*n);
+
+  // on some low pin count xmega INTMASK
+  // is not split between INT0MASK and INT1MASK
+# if defined (__AVR_ATxmega32E5__)
+    (&pp->port->INTMASK)[n] |= (1 << pp->pin);
+    pp->port->INTCTRL &= ~(PORT_INTLVL_gm << 2*n);
+# else
+    (&pp->port->INT0MASK)[n] |= (1 << pp->pin);
+    pp->port->INTCTRL &= ~(PORT_INT0LVL_gm << 2*n);
+# endif
   pp->port->INTCTRL |= (lvl << 2*n);
 }
 

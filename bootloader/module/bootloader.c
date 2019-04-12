@@ -183,9 +183,6 @@ static void boot(void)
   __builtin_unreachable();
 }
 
-#define LEDA (&PORTPIN(E,2))
-#define LEDB (&PORTPIN(E,3))
-
 static uint16_t fletcher16_checksum(uint8_t *buffer, int len) {
   uint8_t lo=0,hi=0;
   for(int i=0; i<len; i++) {
@@ -398,10 +395,11 @@ int main(void)
 
   clock_init();
 
+  i2cs_t* i2c = &i2cC;
   i2c_init();
-  i2cs_register_reset_callback(&i2cE, i2c_reset_callback);
-  i2cs_register_prepare_send_callback(&i2cE, i2c_prepare_send_callback);
-  i2cs_register_recv_callback(&i2cE, i2c_recv_callback);
+  i2cs_register_reset_callback(i2c, i2c_reset_callback);
+  i2cs_register_prepare_send_callback(i2c, i2c_prepare_send_callback);
+  i2cs_register_recv_callback(i2c, i2c_recv_callback);
 
   INTLVL_ENABLE_ALL();
   __asm__("sei");
@@ -421,27 +419,27 @@ int main(void)
     }
 
     if(reboot_asap) {
-      PORTPIN_CTRL(LEDA) = 0;
-      PORTPIN_CTRL(LEDB) = 0;
+      PORTPIN_CTRL(BOOTLOADER_PP_LEDA) = 0;
+      PORTPIN_CTRL(BOOTLOADER_PP_LEDB) = 0;
 
       wdt_enable(WDTO_60MS);
       for(;;);
     }
     
     if(bootloader_keep_alive%2) {
-      PORTPIN_CTRL(LEDA) = PORT_OPC_PULLUP_gc;
-      PORTPIN_CTRL(LEDB) = PORT_OPC_PULLDOWN_gc;
+      PORTPIN_CTRL(BOOTLOADER_PP_LEDA) = PORT_OPC_PULLUP_gc;
+      PORTPIN_CTRL(BOOTLOADER_PP_LEDB) = PORT_OPC_PULLDOWN_gc;
     }
     else {
-      PORTPIN_CTRL(LEDA) = PORT_OPC_PULLDOWN_gc;
-      PORTPIN_CTRL(LEDB) = PORT_OPC_PULLUP_gc;
+      PORTPIN_CTRL(BOOTLOADER_PP_LEDA) = PORT_OPC_PULLDOWN_gc;
+      PORTPIN_CTRL(BOOTLOADER_PP_LEDB) = PORT_OPC_PULLUP_gc;
     }
 
     _delay_ms(50);
   }
 
-  PORTPIN_CTRL(LEDA) = 0;
-  PORTPIN_CTRL(LEDB) = 0;
+  PORTPIN_CTRL(BOOTLOADER_PP_LEDA) = 0;
+  PORTPIN_CTRL(BOOTLOADER_PP_LEDB) = 0;
 
   // unconfigure I2C
   i2c_deinit();

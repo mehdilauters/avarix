@@ -395,7 +395,7 @@ int main(void)
 
   clock_init();
 
-  i2cs_t* i2c = &i2cC;
+  i2cs_t* i2c = &BOOTLOADER_I2C;
   i2c_init();
   i2cs_register_reset_callback(i2c, i2c_reset_callback);
   i2cs_register_prepare_send_callback(i2c, i2c_prepare_send_callback);

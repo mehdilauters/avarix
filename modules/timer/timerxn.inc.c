@@ -14,12 +14,8 @@
 #define timerXN(s) XN_(timer,s)
 #define timerXN_ XN_(timer,_)
 
+static timer_t timerXN_ = { .tc = (TCx_t*)&TCXN() };
 
-#if TCXN(_CCC_vect_num)
-static timer0_t timerXN_ = { .tc = &TCXN() };
-#else
-static timer1_t timerXN_ = { .tc = &TCXN() };
-#endif
 timer_t *const timerXN() = (timer_t*)&timerXN_;
 
 

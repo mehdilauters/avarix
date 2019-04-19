@@ -10,18 +10,10 @@ typedef struct {
   void (*callback)(void);  ///< callback to execute
 } timer_event_t;
 
-/// Scheduling configuration for a TCx0 timer
-typedef struct timer0_struct {
-  TC0_t *const tc;
+typedef struct timer_struct {
+  TCx_t *const tc;
   timer_event_t events[4];
-} timer0_t;
-
-/// Scheduling configuration for a TCx1 timer
-typedef struct timer1_struct {
-  TC1_t *const tc;
-  timer_event_t events[2];
-} timer1_t;
-
+} timer_t;
 
 #define TIMER_EXPR(xn) \
     static void timer##xn##_init(void);
@@ -35,17 +27,15 @@ void timer_init(void)
 #undef TIMER_EXPR
 }
 
-
-TC0_t *timer_get_tc(const timer_t *t)
+TCx_t *timer_get_tc(const timer_t *t)
 {
   return t->tc;
 }
 
-
 void timer_set_callback(timer_t *t, timer_channel_t ch, uint16_t period, intlvl_t intlvl, timer_callback_t cb)
 {
   const uint8_t ich = ch-TIMER_CHA;
-  TC0_t *const tc = t->tc;
+  TCx_t *const tc = t->tc;
   INTLVL_DISABLE_ALL_BLOCK() {
     tc->INTCTRLB = (tc->INTCTRLB & ~(3 << 2*ich)) | (intlvl << 2*ich);
     (&tc->CCA)[ich] = tc->CNT + period;
@@ -57,7 +47,7 @@ void timer_set_callback(timer_t *t, timer_channel_t ch, uint16_t period, intlvl_
 void timer_clear_callback(timer_t *t, timer_channel_t ch)
 {
   const uint8_t ich = ch-TIMER_CHA;
-  TC0_t *const tc = t->tc;
+  TCx_t *const tc = t->tc;
   INTLVL_DISABLE_ALL_BLOCK() {
     tc->INTCTRLB = (tc->INTCTRLB & ~(3 << 2*ich)) | (0 << 2*ich);
     t->events[ich].callback = 0;
@@ -82,6 +72,7 @@ void timer_clear_callback(timer_t *t, timer_channel_t ch)
 #endif
 
 #ifdef TIMERD0_ENABLED
+# define TIMER_T timer0_t
 # define XN_(p,s)  p ## D0 ## s
 # include "timerxn.inc.c"
 #endif
@@ -111,5 +102,19 @@ void timer_clear_callback(timer_t *t, timer_channel_t ch)
 # include "timerxn.inc.c"
 #endif
 
+#ifdef TIMERC4_ENABLED
+# define XN_(p,s) p ## C4 ## s
+# include "timerxn.inc.c"
+#endif
+
+#ifdef TIMERC5_ENABLED
+# define XN_(p,s) p ## C5 ## s
+# include "timerxn.inc.c"
+#endif
+
+#ifdef TIMERD5_ENABLED
+# define XN_(p,s) p ## D5 ## s
+# include "timerxn.inc.c"
+#endif
 
 ///@endcond

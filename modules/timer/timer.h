@@ -25,6 +25,7 @@
 #include <clock/defs.h>
 #include "timer_config.h"
 
+#include "timer_generic_register.h"
 
 #ifdef DOXYGEN
 
@@ -115,6 +116,32 @@ extern timer_t *const timerxn;
 # define TIMERF1_APPLY_EXPR(f)
 #endif
 
+#ifdef TIMERC4_ENABLED
+# define TIMERC4_APPLY_EXPR(f)  f(C4)
+# ifndef TIMERC4_PRESCALER_DIV
+#  define TIMERC4_PRESCALER_DIV  TIMER_PRESCALER_DIV
+# endif
+#else
+# define TIMERC4_APPLY_EXPR(f)
+#endif
+
+#ifdef TIMERC5_ENABLED
+# define TIMERC5_APPLY_EXPR(f)  f(C5)
+# ifndef TIMERC5_PRESCALER_DIV
+#  define TIMERC5_PRESCALER_DIV  TIMER_PRESCALER_DIV
+# endif
+#else
+# define TIMERC5_APPLY_EXPR(f)
+#endif
+
+#ifdef TIMERD5_ENABLED
+# define TIMERD5_APPLY_EXPR(f)  f(D5)
+# ifndef TIMERD5_PRESCALER_DIV
+#  define TIMERD5_PRESCALER_DIV  TIMER_PRESCALER_DIV
+# endif
+#else
+# define TIMERD5_APPLY_EXPR(f)
+#endif
 
 // Apply a macro to all enabled timers
 #define TIMER_ALL_APPLY_EXPR(f)  \
@@ -126,11 +153,11 @@ extern timer_t *const timerxn;
   TIMERE1_APPLY_EXPR(f) \
   TIMERF0_APPLY_EXPR(f) \
   TIMERF1_APPLY_EXPR(f) \
+  TIMERC4_APPLY_EXPR(f) \
+  TIMERC5_APPLY_EXPR(f) \
+  TIMERD5_APPLY_EXPR(f) \
 
-
-// timer0_struct and timer1_struct are compatible
-// use timer0 for common type since it is the largest one
-typedef struct timer0_struct timer_t;
+typedef struct timer_struct timer_t;
 
 #define TIMER_EXPR(xn) \
     extern timer_t *const timer##xn;
@@ -164,10 +191,10 @@ void timer_init(void);
 
 
 /** @brief Get underlying TC structure
- * @note The returned pointer actually points to a TC1_t structure for timers
- * of type 1. Since TC0_t and TC1_t are compatible this is fine.
+ * @note The returned pointer actually points to a generic TCx_t structure 
+ * compatible with timers of type 0, 1, 2, 4 and 5
  */
-TC0_t *timer_get_tc(const timer_t *t);
+TCx_t *timer_get_tc(const timer_t *t);
 
 
 /** @brief Schedule a periodic callback on a timer channel

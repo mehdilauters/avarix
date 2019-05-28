@@ -98,5 +98,7 @@ bool adxl345_is_tap_interrupt(adxl345_t *b) {
 }
 
 bool adxl345_update(adxl345_t *b) {
+  // do not reset interrupt flag if not already checked by adxl345_is_tap_interrupt
+  if(b->interrupt & ADXL345_INTERRUPT_TAP) return true;
   return read_register(b, ADXL345_REGISTER_INT_SOURCE, &(b->interrupt));
 }

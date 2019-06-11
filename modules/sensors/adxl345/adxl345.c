@@ -76,29 +76,21 @@ bool adxl345_set_tap_parameters(adxl345_t *b, adxl345_tap_axes_t axes, uint8_t t
 adxl345_error_t adxl345_init(adxl345_t *b, i2cm_t *i2cm, uint8_t address) {
   b->i2c = i2cm;
   b->address = address;
-  b->interrupt = 0;
-  uint8_t devid;
-  if(read_register(b, ADXL345_REGISTER_DEVID, &devid)) {
-    if(devid == ADXL345_DEVID_CODE) {
-        return ADXL345_ERROR_SUCCESS;
-    } else {
-        return ADXL345_ERROR_INVALID_DEVID;
-    }
-  } else {
-    return ADXL345_ERROR_PEER_UNREACHABLE;
-  }
+  b->tap_count = 0;
+  return ADXL345_ERROR_SUCCESS;
 }
 
-bool adxl345_is_tap_interrupt(adxl345_t *b) {
-  if(b->interrupt & ADXL345_INTERRUPT_TAP) {
-      b->interrupt = 0;
-      return true;
-  }
-  return false;
+uint8_t adxl345_get_tap_count(adxl345_t *b) {
+  return b->tap_count;
 }
 
 bool adxl345_update(adxl345_t *b) {
-  // do not reset interrupt flag if not already checked by adxl345_is_tap_interrupt
-  if(b->interrupt & ADXL345_INTERRUPT_TAP) return true;
-  return read_register(b, ADXL345_REGISTER_INT_SOURCE, &(b->interrupt));
+  uint8_t interrupt = 0;
+  if(read_register(b, ADXL345_REGISTER_INT_SOURCE, &interrupt)) {
+      if(interrupt & ADXL345_INTERRUPT_TAP) {
+          b->tap_count++;
+      }
+      return true;
+  }
+  return false;
 }

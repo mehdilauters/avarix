@@ -18,7 +18,7 @@ typedef enum {
 typedef struct {
   i2cm_t * i2c;
   uint8_t address;
-  uint8_t interrupt;
+  uint8_t tap_count;
 } adxl345_t;
 
 /** @brief Initialize the adxl345_t structure 
@@ -57,9 +57,9 @@ bool adxl345_set_tap_duration(adxl345_t *b, uint8_t duration);
  */
 bool adxl345_set_tap_parameters(adxl345_t *b, adxl345_tap_axes_t axes, uint8_t threshold, uint8_t duration);
 
-/** @brief check and clear interrupts flags
+/** @brief get tap interrupt count
  */
-bool adxl345_is_tap_interrupt(adxl345_t *b);
+uint8_t adxl345_get_tap_count(adxl345_t *b);
 
 /** @brief update adxl345 structure
  */

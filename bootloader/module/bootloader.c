@@ -270,6 +270,7 @@ static void i2c_recv_callback(uint8_t *rx, uint8_t rxlen) {
       // validate frame
       if(csum != checksum) {
         i2c_tx_answer_failure(FAILURE_INVALID_CHECKSUM);
+        break;
       }
 
       // keep bootloader awake
@@ -293,6 +294,7 @@ static void i2c_recv_callback(uint8_t *rx, uint8_t rxlen) {
       // validate frame
       if(csum != checksum) {
         i2c_tx_answer_failure(FAILURE_INVALID_CHECKSUM);
+        break;
       }
 
       // keep bootloader awake
@@ -314,12 +316,15 @@ static void i2c_recv_callback(uint8_t *rx, uint8_t rxlen) {
       // validate frame
       if(csum != checksum) {
         i2c_tx_answer_failure(FAILURE_INVALID_CHECKSUM);
+        break;
       }
 
       // keep bootloader awake
       bootloader_keep_alive = 30;
 
       boot_app_page_erase_write(address);
+      // wait for NVM busy bit to clear (AVR 1316 3.1)
+      boot_nvm_busy_wait();
 
       // tx frame
       i2c_tx_answer_failure(FAILURE_SUCCESS);

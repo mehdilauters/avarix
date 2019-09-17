@@ -39,6 +39,7 @@ void i2cX(_init)(void)
       (((I2C_INTLVL) << TWI_MASTER_INTLVL_gp) & TWI_MASTER_INTLVL_gm)
       ;
   TWIX.MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
+
 }
 
 void i2cX(_deinit)(void)
@@ -58,12 +59,17 @@ ISR(twiX(_TWIM_vect))
   if(status & TWI_MASTER_WIF_bm) {
 
     if(status & (TWI_MASTER_ARBLOST_bm | TWI_MASTER_BUSERR_bm)) {
+
+      // force bus state back to IDLE
+      TWIX.MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
+
+      i2cm->bytes_to_send = 0;
+
       // bus error
       if(i2cm->write_completed_callback) {
         i2cm->write_completed_callback(-2, i2cm->write_completed_callback_payload);
       }
 
-      i2cm->bytes_to_send = 0;
       return;
     }
 
@@ -71,11 +77,13 @@ ISR(twiX(_TWIM_vect))
       // NACK received
       TWIX.MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
 
+      i2cm->bytes_to_send = 0;
+
+      // NACK received from peer
       if(i2cm->write_completed_callback) {
         i2cm->write_completed_callback(-1, i2cm->write_completed_callback_payload);
       }
 
-      i2cm->bytes_to_send = 0;
       return;
     }
 

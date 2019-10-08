@@ -44,6 +44,8 @@ typedef void (*i2cs_reset_callback_t)(void);
 
 typedef struct {
 
+  TWI_SLAVE_t *slave;
+
   i2cs_state_t state;
 
   uint8_t recvd_bytes;

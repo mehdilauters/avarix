@@ -143,6 +143,9 @@ int8_t i2cm_async_send(i2cm_t *i2c, uint8_t addr, const uint8_t *data, uint8_t n
 int8_t i2cm_async_recv(i2cm_t *i2c, uint8_t addr, uint8_t n,
                         i2cm_read_completed_callback f, void *payload);
 
+/** @brief Set I2C slave peripheral own address */
+void i2cs_set_address(i2cs_t *s, uint8_t address);
+
 /** @brief Register f to be called whenever a master-read operation was requested and user need
  * to provision the send buffer */
 void i2cs_register_prepare_send_callback(i2cs_t *, i2cs_prepare_send_callback_t f);

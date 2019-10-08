@@ -21,6 +21,8 @@ i2cs_t i2cX();
 void i2cX(_init)(void)
 {
 
+  i2cX().slave = &TWIX.SLAVE;
+
   i2cX().state = I2CS_STATE_NONE;
 
   i2cX().reset_callback = NULL;

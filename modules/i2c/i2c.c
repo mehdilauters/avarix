@@ -238,6 +238,14 @@ int8_t i2cm_async_recv(i2cm_t *i2cm, uint8_t addr, uint8_t n,
 }
 
 
+void i2cs_set_address(i2cs_t *i2cs, uint8_t address) {
+
+  TWI_SLAVE_t *slave = i2cs->slave;
+  INTLVL_DISABLE_BLOCK(I2C_INTLVL) {
+    slave->ADDR = address << 1;
+  }
+}
+
 void i2cs_register_reset_callback(i2cs_t *i2c, i2cs_reset_callback_t f)
 {
   INTLVL_DISABLE_BLOCK(I2C_INTLVL) {

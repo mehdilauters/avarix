@@ -27,9 +27,11 @@ void i2cX(_init)(void)
 {
   i2cX().master = &TWIX.MASTER;
 
-  i2cX().bytes_sent = 0;
+  i2cX().bytes_count = 0;
+  i2cX().bytes_to_recv = 0;
   i2cX().bytes_to_send = 0;
   i2cX().write_completed_callback = NULL;
+  i2cX().read_completed_callback = NULL;
 
   // write baudrate first (master should be disabled)
   TWIX.MASTER.BAUD = ((CLOCK_SYS_FREQ)/(2*(I2CX(_BAUDRATE)))) - 5;
@@ -62,48 +64,113 @@ ISR(twiX(_TWIM_vect))
 
       // force bus state back to IDLE
       TWIX.MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
+      // clear interruptions
+      TWIX.MASTER.CTRLA &= ~TWI_MASTER_WIEN_bm;
+      TWIX.MASTER.CTRLA &= ~TWI_MASTER_RIEN_bm;
 
-      i2cm->bytes_to_send = 0;
-
-      // bus error
-      if(i2cm->write_completed_callback) {
+      // bus error during write operation
+      if(i2cm->bytes_to_send > 0 && i2cm->write_completed_callback) {
         i2cm->write_completed_callback(-2, i2cm->write_completed_callback_payload);
       }
 
+      // bus error during read operation
+      if(i2cm->bytes_to_recv > 0 && i2cm->read_completed_callback) {
+        i2cm->read_completed_callback(NULL, -2, i2cm->read_completed_callback_payload);
+      }
+
+      i2cm->bytes_to_send = 0;
+      i2cm->bytes_to_recv = 0;
       return;
     }
 
     if(status & TWI_MASTER_RXACK_bm) {
-      // NACK received
+
+      // NACK received, finish transaction
       TWIX.MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
+      // clear interruptions
+      TWIX.MASTER.CTRLA &= ~TWI_MASTER_WIEN_bm;
+      TWIX.MASTER.CTRLA &= ~TWI_MASTER_RIEN_bm;
 
-      i2cm->bytes_to_send = 0;
-
-      // NACK received from peer
-      if(i2cm->write_completed_callback) {
+      // NACK received from peer during write operation
+      if(i2cm->bytes_to_send > 0 && i2cm->write_completed_callback) {
         i2cm->write_completed_callback(-1, i2cm->write_completed_callback_payload);
       }
+
+      // NACK recevied from peer during read operation
+      if(i2cm->bytes_to_recv > 0 && i2cm->read_completed_callback) {
+        i2cm->read_completed_callback(NULL, -1, i2cm->read_completed_callback_payload);
+      }
+
+      i2cm->bytes_to_send = 0;
+      i2cm->bytes_to_recv = 0;
 
       return;
     }
 
-    if(i2cm->bytes_sent >= i2cm->bytes_to_send) {
+    if(i2cm->bytes_count >= i2cm->bytes_to_send) {
       // finish transaction
       TWIX.MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
-      // clear write interruption
+      // clear interruptions
       TWIX.MASTER.CTRLA &= ~TWI_MASTER_WIEN_bm;
+      TWIX.MASTER.CTRLA &= ~TWI_MASTER_RIEN_bm;
 
       i2cm->bytes_to_send = 0;
+      i2cm->bytes_to_recv = 0;
 
       if(i2cm->write_completed_callback) {
-        i2cm->write_completed_callback(i2cm->bytes_sent, i2cm->write_completed_callback_payload);
+        i2cm->write_completed_callback(i2cm->bytes_count, i2cm->write_completed_callback_payload);
       }
       return;
     }
     else {
-      char byte = i2cm->send_buffer[i2cm->bytes_sent++];
+      char byte = i2cm->buffer[i2cm->bytes_count++];
       TWIX.MASTER.DATA = byte;
     }
+  }
+  // on read interrupt
+  else if(status & TWI_MASTER_RIF_bm) {
+    if(status & (TWI_MASTER_ARBLOST_bm | TWI_MASTER_BUSERR_bm)) {
+
+      // force bus state back to IDLE
+      TWIX.MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
+      // clear interruptions
+      TWIX.MASTER.CTRLA &= ~TWI_MASTER_WIEN_bm;
+      TWIX.MASTER.CTRLA &= ~TWI_MASTER_RIEN_bm;
+
+      i2cm->bytes_to_send = 0;
+      i2cm->bytes_to_recv = 0;
+
+      // bus error
+      if(i2cm->read_completed_callback) {
+        i2cm->read_completed_callback(NULL, -2, i2cm->read_completed_callback_payload);
+      }
+      return;
+    }
+    
+    // store byte
+    char byte = TWIX.MASTER.DATA;
+    i2cm->buffer[i2cm->bytes_count++] = byte;
+
+    if(i2cm->bytes_count >= i2cm->bytes_to_recv) {
+      // NACK, end of transmission
+      TWIX.MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc | TWI_MASTER_ACKACT_bm;
+      // clear interruptions
+      TWIX.MASTER.CTRLA &= ~TWI_MASTER_WIEN_bm;
+      TWIX.MASTER.CTRLA &= ~TWI_MASTER_RIEN_bm;
+
+      i2cm->bytes_to_send = 0;
+      i2cm->bytes_to_recv = 0;
+
+      if(i2cm->read_completed_callback) {
+        i2cm->read_completed_callback(i2cm->buffer, i2cm->bytes_count, i2cm->read_completed_callback_payload);
+      }
+      return;
+    }
+    else {
+      // ACK, send more
+      TWIX.MASTER.CTRLC = TWI_MASTER_CMD_RECVTRANS_gc;
+    }
+
   }
 }
 

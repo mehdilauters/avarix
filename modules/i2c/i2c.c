@@ -161,7 +161,7 @@ int8_t i2cm_async_send(i2cm_t *i2cm, uint8_t addr, const uint8_t *data, uint8_t 
   TWI_MASTER_t *m = i2cm->master;
 
   // check if send size overflow internal buffer
-  if(n > sizeof(i2cm->send_buffer)) {
+  if(n > sizeof(i2cm->buffer)) {
     return -1;
   }
 
@@ -178,9 +178,10 @@ int8_t i2cm_async_send(i2cm_t *i2cm, uint8_t addr, const uint8_t *data, uint8_t 
     }
 
     // prepare send buffer
-    memcpy(i2cm->send_buffer, data, n);
-    i2cm->bytes_sent = 0;
+    memcpy(i2cm->buffer, data, n);
+    i2cm->bytes_count = 0;
     i2cm->bytes_to_send = n;
+    i2cm->bytes_to_recv = 0;
 
     // register callback
     i2cm->write_completed_callback = f;
@@ -194,6 +195,48 @@ int8_t i2cm_async_send(i2cm_t *i2cm, uint8_t addr, const uint8_t *data, uint8_t 
   }
   return n;
 }
+
+int8_t i2cm_async_recv(i2cm_t *i2cm, uint8_t addr, uint8_t n,
+                        i2cm_read_completed_callback f, void* payload)
+{
+  TWI_MASTER_t *m = i2cm->master;
+
+  // check if recv size overflow internal buffer
+  if(n > sizeof(i2cm->buffer)) {
+    return -1;
+  }
+
+  INTLVL_DISABLE_BLOCK(I2C_INTLVL) {
+
+    // check if an async read or write is currently under way
+    if(i2cm->bytes_to_send != 0) {
+      return -2;
+    }
+
+    // check bus is idle, return otherwise
+    if((m->STATUS & TWI_MASTER_BUSSTATE_gm) != TWI_MASTER_BUSSTATE_IDLE_gc) {
+      return -3;
+    }
+
+    // prepare read 
+    i2cm->bytes_count = 0;
+    i2cm->bytes_to_send = 0;
+    i2cm->bytes_to_recv = n;
+
+    // register callback
+    i2cm->read_completed_callback = f;
+    i2cm->read_completed_callback_payload = payload;
+
+    // enable interruptions
+    m->CTRLA |= TWI_MASTER_WIEN_bm;
+    m->CTRLA |= TWI_MASTER_RIEN_bm;
+    // push slave address + read bit (1)
+    m->ADDR = (addr<<1) | 1;
+  }
+
+  return 0;
+}
+
 
 void i2cs_register_reset_callback(i2cs_t *i2c, i2cs_reset_callback_t f)
 {

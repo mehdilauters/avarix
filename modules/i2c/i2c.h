@@ -113,7 +113,7 @@ int8_t i2cm_send(i2cm_t *m, uint8_t addr, const uint8_t *data, uint8_t n);
 int8_t i2cm_recv(i2cm_t *m, uint8_t addr, uint8_t *data, uint8_t n);
 
 /** @brief Asynchonously send a frame to a slave, 
- * write completion will be notify using the write_completed callback function
+ * write completion will be notified using the write_completed callback function
  *
  * @param addr slave address
  * @param n size to send
@@ -123,11 +123,25 @@ int8_t i2cm_recv(i2cm_t *m, uint8_t addr, uint8_t *data, uint8_t n);
  *
  * @retval -1 send size overflow internal buffer
  * @retval -2 another async send/recv is underway
- * @retval -2 i2c bus was not ready
+ * @retval -3 i2c bus was not ready
  * @retval n  size of data which will be sent
  */
 int8_t i2cm_async_send(i2cm_t *i2c, uint8_t addr, const uint8_t *data, uint8_t n,
                         i2cm_write_completed_callback f, void *payload);
+
+/** @brief Asynchonously receive a frame from a slave,
+ * read completion will be notified using the read_completed callback function
+ * @param addr slave address
+ * @param n receive buffer size
+ * @param f function which will be called on read completion (success or failure)
+ * @param payload pointer which will be passed as argument to callback function
+ * @retval -1 recv size overflowed internal buffer
+ * @retval -2 another async send/recv is underway
+ * @retval -3 i2c bus was not ready
+ * @retval 0 on success
+ */
+int8_t i2cm_async_recv(i2cm_t *i2c, uint8_t addr, uint8_t n,
+                        i2cm_read_completed_callback f, void *payload);
 
 /** @brief Register f to be called whenever a master-read operation was requested and user need
  * to provision the send buffer */
